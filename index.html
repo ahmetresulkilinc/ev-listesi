@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cemre'nin Evi</title>
+<meta name="description" content="Yeni ev için alınacaklar listesi — acil, orta, sonra.">
+<meta name="theme-color" content="#ffd9e4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Evim">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Ev anahtarı kapısı (sadece bulut modunda ve anahtar yoksa) -->
+<div id="gate" class="gate" hidden>
+  <div class="gate-box">
+    <div class="pixel-house small" aria-hidden="true"></div>
+    <h1 class="gate-title">Evin anahtarı?</h1>
+    <p class="gate-text">Bu listeyi görmek için ev anahtarını yaz. Ahmet'ten alabilirsin, bir kere yazman yeter.</p>
+    <form id="gateForm" class="gate-form">
+      <input id="gateKey" class="px-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ev anahtarı" required>
+      <button class="px-btn primary" type="submit">Kapıyı aç</button>
+    </form>
+    <p id="gateError" class="gate-error" hidden>Bu anahtar hiçbir kapıyı açmadı. Tekrar dene.</p>
+  </div>
+</div>
+
+<header class="top">
+  <div class="top-inner">
+    <div id="house" class="pixel-house" title="Alındıkça pencereler yanar" aria-hidden="true"></div>
+    <div class="top-text">
+      <h1 id="title" class="title" contenteditable="true" spellcheck="false" aria-label="Ev adı">Cemre'nin Evi</h1>
+      <p id="subtitle" class="subtitle">Yeni evin alışveriş listesi</p>
+    </div>
+    <button id="settingsBtn" class="px-btn icon" type="button" aria-label="Ayarlar">⚙</button>
+  </div>
+  <div id="cloudBadge" class="cloud-badge" hidden></div>
+</header>
+
+<section class="budget" aria-label="Bu ayın bütçesi">
+  <div class="budget-head">
+    <span class="budget-label">BU AY</span>
+    <button id="budgetEdit" class="budget-amount" type="button" title="Bütçeyi değiştir">
+      <span id="budgetValue">—</span> TL
+    </button>
+  </div>
+  <div class="hp" role="img" aria-label="Bütçe çubuğu">
+    <div id="hpSpent" class="hp-seg spent"></div>
+    <div id="hpPlanned" class="hp-seg planned"></div>
+  </div>
+  <div class="budget-legend">
+    <span><i class="sw spent"></i>Harcanan <b id="sumSpent">0</b></span>
+    <span><i class="sw planned"></i>Bu ay planlı <b id="sumPlanned">0</b></span>
+    <span><i class="sw left"></i>Kalan <b id="sumLeft">0</b></span>
+  </div>
+</section>
+
+<nav id="tabs" class="tabs" aria-label="Kategoriler"></nav>
+
+<main id="board" class="board"></main>
+
+<!-- Sürükleme sırasında beliren bırakma yuvası -->
+<div id="dock" class="dock" aria-hidden="true">
+  <div class="dock-target" data-col="acil"><span>🔥</span><small>Acil</small><div class="dock-list" data-col="acil"></div></div>
+  <div class="dock-target" data-col="orta"><span>⭐</span><small>Orta</small><div class="dock-list" data-col="orta"></div></div>
+  <div class="dock-target" data-col="sonra"><span>🌙</span><small>Sonra</small><div class="dock-list" data-col="sonra"></div></div>
+  <div class="dock-target" data-col="alindi"><span>✅</span><small>Alındı</small><div class="dock-list" data-col="alindi"></div></div>
+</div>
+
+<button id="addBtn" class="fab" type="button" aria-label="Yeni ürün ekle">+</button>
+
+<!-- Ürün sheet'i -->
+<div id="sheetBackdrop" class="backdrop" hidden></div>
+<section id="sheet" class="sheet" hidden aria-label="Ürün">
+  <div class="sheet-handle"></div>
+  <form id="itemForm" class="sheet-form" autocomplete="off">
+    <div class="row">
+      <label class="field emoji-field">
+        <span>Simge</span>
+        <input id="fEmoji" class="px-input" type="text" maxlength="4" placeholder="🧸">
+      </label>
+      <label class="field grow">
+        <span>Ne alınacak?</span>
+        <input id="fName" class="px-input" type="text" required placeholder="örn. tava" maxlength="80">
+      </label>
+    </div>
+
+    <div class="field">
+      <span>Nerede dursun?</span>
+      <div id="fCategory" class="seg">
+        <button type="button" data-val="acil" class="seg-btn acil">🔥 Acil</button>
+        <button type="button" data-val="orta" class="seg-btn orta">⭐ Orta</button>
+        <button type="button" data-val="sonra" class="seg-btn sonra">🌙 Sonra</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <label class="field grow">
+        <span>Fiyat (TL)</span>
+        <input id="fPrice" class="px-input" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0">
+      </label>
+      <label class="field check">
+        <input id="fPlanned" type="checkbox">
+        <span class="check-box"></span>
+        <span>Bu ay alacağım</span>
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Trendyol linki</span>
+      <input id="fLink" class="px-input" type="text" placeholder="https://ty.gl/..." inputmode="url" autocapitalize="off">
+    </label>
+
+    <div class="field">
+      <span>Görsel</span>
+      <div class="img-row">
+        <div id="fImgPreview" class="img-preview" aria-hidden="true"></div>
+        <div class="img-actions">
+          <input id="fImageUrl" class="px-input" type="text" placeholder="görsel linki yapıştır" inputmode="url" autocapitalize="off">
+          <div class="img-btns">
+            <label class="px-btn small">
+              📷 Fotoğraf seç
+              <input id="fImageFile" type="file" accept="image/*" hidden>
+            </label>
+            <button id="fImageClear" class="px-btn small ghost" type="button">Kaldır</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <label class="field">
+      <span>Not</span>
+      <textarea id="fNote" class="px-input" rows="3" placeholder="model, renk, neden lazım..."></textarea>
+    </label>
+
+    <div class="sheet-actions">
+      <button id="fDelete" class="px-btn danger ghost" type="button">Sil</button>
+      <button id="fBought" class="px-btn success" type="button">✓ Alındı</button>
+      <button id="fSave" class="px-btn primary" type="submit">Kaydet</button>
+    </div>
+  </form>
+</section>
+
+<!-- Ayarlar sheet'i -->
+<section id="settingsSheet" class="sheet" hidden aria-label="Ayarlar">
+  <div class="sheet-handle"></div>
+  <div class="sheet-form">
+    <h2 class="sheet-title">Ayarlar</h2>
+    <label class="field">
+      <span>Ev adı</span>
+      <input id="sTitle" class="px-input" type="text" maxlength="40">
+    </label>
+    <label class="field">
+      <span>Bu ayın bütçesi (TL)</span>
+      <input id="sBudget" class="px-input" type="number" inputmode="numeric" min="0" step="1">
+    </label>
+    <p class="hint">Bütçe her ay sıfırdan girilir. "Harcanan" bu ay alındı işaretlenenlerin toplamıdır.</p>
+    <div class="settings-grid">
+      <button id="sExport" class="px-btn small" type="button">⬇ Yedek indir</button>
+      <label class="px-btn small">⬆ Yedek yükle<input id="sImport" type="file" accept="application/json" hidden></label>
+      <button id="sSeed" class="px-btn small" type="button">🌱 Başlangıç listesini ekle</button>
+      <button id="sKey" class="px-btn small ghost" type="button">🔑 Ev anahtarını değiştir</button>
+    </div>
+    <p id="sInfo" class="hint"></p>
+    <div class="sheet-actions">
+      <button id="sSave" class="px-btn primary" type="button">Kaydet</button>
+    </div>
+  </div>
+</section>
+
+<div id="toast" class="toast" hidden></div>
+<div id="confetti" class="confetti" aria-hidden="true"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="seed.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

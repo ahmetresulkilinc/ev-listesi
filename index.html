@@ -33,6 +33,17 @@
   </div>
 </div>
 
+<!-- Hoş geldin (ilk girişte bir kere) -->
+<div id="welcome" class="gate welcome" hidden>
+  <div class="gate-box">
+    <div id="welcomeHouse" class="pixel-house small" aria-hidden="true"></div>
+    <h1 id="welcomeTitle" class="gate-title"></h1>
+    <p id="welcomeText" class="welcome-text"></p>
+    <p id="welcomeSign" class="welcome-sign"></p>
+    <button id="welcomeBtn" class="px-btn primary" type="button">Eve gir ♥</button>
+  </div>
+</div>
+
 <header class="top">
   <div class="top-inner">
     <div id="house" class="pixel-house" title="Alındıkça pencereler yanar" aria-hidden="true"></div>
@@ -114,10 +125,15 @@
       </label>
     </div>
 
-    <label class="field">
-      <span>Trendyol linki</span>
-      <input id="fLink" class="px-input" type="text" placeholder="https://ty.gl/..." inputmode="url" autocapitalize="off">
-    </label>
+    <div class="field">
+      <span>Linkler (Trendyol vb.)</span>
+      <div id="fLinks" class="links"></div>
+      <div class="img-btns">
+        <button id="fLinkAdd" class="px-btn small" type="button">+ link ekle</button>
+        <button id="fPaste" class="px-btn small" type="button">📋 Panodan yapıştır</button>
+      </div>
+      <p id="fMetaHint" class="hint" hidden></p>
+    </div>
 
     <div class="field">
       <span>Görsel</span>

@@ -1,15 +1,25 @@
 {
-      "name": "Flork",
-      "palette": {
-      "k": "#3b2a3a",
-      "w": "#ffffff",
-      "g": "#e9e0e8",
-      "p": "#ffb3c7",
-      "r": "#ff7a9a",
-      "l": "#ffa3b8"
- },
-      "frames": [
-  [
+  "name": "Flork",
+  "palette": {
+    "k": "#3b2a3a",
+    "w": "#ffffff",
+    "g": "#e9e0e8",
+    "p": "#ffb3c7",
+    "r": "#ff7a9a",
+    "l": "#ffa3b8"
+  },
+  "roles": {
+    "idle": 0,
+    "blink": 1,
+    "walk": [
+      2,
+      3
+    ],
+    "held": 4,
+    "land": 5
+  },
+  "frames": [
+    [
       "........kkkkkkkk........",
       "......kkwwwwwwwwkk......",
       ".....kwwwwwwwwwwwwk.....",
@@ -34,8 +44,8 @@
       ".....kggkkkggkkkggk.....",
       "......kkkkkkkkkkkk......",
       "........................"
-  ],
-  [
+    ],
+    [
       "........kkkkkkkk........",
       "......kkwwwwwwwwkk......",
       ".....kwwwwwwwwwwwwk.....",
@@ -60,6 +70,110 @@
       ".....kggkkkggkkkggk.....",
       "......kkkkkkkkkkkk......",
       "........................"
+    ],
+    [
+      "........kkkkkkkk........",
+      "......kkwwwwwwwwkk......",
+      ".....kwwwwwwwwwwwwk.....",
+      "....kwwwwwwwwwwwwwwk....",
+      "..kkwwwwwwwwwwwwwwwwkk..",
+      ".kwwwwwwwwwwwwwwwwwwwwk.",
+      ".kwwwwwkgwwwwwwkgwwwwwk.",
+      ".kwwwwwkkwwwwwwkkwwwwwk.",
+      ".kwppwwwwwwwwwwwwwwppwk.",
+      ".kwppwwwwkwwwwkwwwwppwk.",
+      ".kwwwwwwwwkkkkwwwwwwwwk.",
+      "..kwwwwwwwwwwwwwwwwwwk..",
+      "...kwwwwwwwwwwwwwwwwk...",
+      "....kggggggggggggggk....",
+      "....kwwwwkkwwkkwwwwk....",
+      "....kwwwklrkklrkwwwk....",
+      "....kwwwklrrrrrkwwwk....",
+      "....kwwwkrrrrrrkwwwk....",
+      "....kkwwwkrrrrkwwwkk....",
+      "....kgkwwwkrrkwwwkgk....",
+      "....kggkwwwkkwwwkggk....",
+      ".....kggkkkggkkkggk.....",
+      "......kkkkkkkkkkkk......",
+      ".....kk.......kk........"
+    ],
+    [
+      "........................",
+      "........kkkkkkkk........",
+      "......kkwwwwwwwwkk......",
+      ".....kwwwwwwwwwwwwk.....",
+      "....kwwwwwwwwwwwwwwk....",
+      "..kkwwwwwwwwwwwwwwwwkk..",
+      ".kwwwwwkgwwwwwwkgwwwwwk.",
+      ".kwwwwwkkwwwwwwkkwwwwwk.",
+      ".kwppwwwwwwwwwwwwwwppwk.",
+      ".kwppwwwwkwwwwkwwwwppwk.",
+      ".kwwwwwwwwkkkkwwwwwwwwk.",
+      "..kwwwwwwwwwwwwwwwwwwk..",
+      "...kwwwwwwwwwwwwwwwwk...",
+      "....kggggggggggggggk....",
+      "....kwwwwkkwwkkwwwwk....",
+      "....kwwwklrkklrkwwwk....",
+      "....kwwwklrrrrrkwwwk....",
+      "....kwwwkrrrrrrkwwwk....",
+      "....kkwwwkrrrrkwwwkk....",
+      "....kgkwwwkrrkwwwkgk....",
+      "....kggkwwwkkwwwkggk....",
+      ".....kggkkkggkkkggk.....",
+      "......kkkkkkkkkkkk......",
+      "........kk.......kk....."
+    ],
+    [
+      "........kkkkkkkk........",
+      "......kkwwwwwwwwkk......",
+      ".k...kwwwwwwwwwwwwk...k.",
+      "..k.kwwwwwwwwwwwwwwk.k..",
+      "..kkwwwwwwwwwwwwwwwwkk..",
+      ".kwwwwkkkwwwwwwkkkwwwwk.",
+      ".kwwwwkwkwwwwwwkwkwwwwk.",
+      ".kwwwwkkkwwwwwwkkkwwwwk.",
+      ".kwppwwwwwwwwwwwwwwppwk.",
+      ".kwppwwwwwwkkwwwwwwppwk.",
+      ".kwwwwwwwwkrrkwwwwwwwwk.",
+      "..kwwwwwwwwkkwwwwwwwwk..",
+      "...kwwwwwwwwwwwwwwwwk...",
+      "....kggggggggggggggk....",
+      "....kwwwwkkwwkkwwwwk....",
+      "....kwwwklrkklrkwwwk....",
+      "....kwwwklrrrrrkwwwk....",
+      "....kwwwkrrrrrrkwwwk....",
+      "....kkwwwkrrrrkwwwkk....",
+      "....kgkwwwkrrkwwwkgk....",
+      "....kggkwwwkkwwwkggk....",
+      ".....kggkkkggkkkggk.....",
+      "......kkkkkkkkkkkk......",
+      "........................"
+    ],
+    [
+      "........................",
+      "........................",
+      ".......kkkkkkkkkk.......",
+      ".....kkwwwwwwwwwwkk.....",
+      "...kkwwwwwwwwwwwwwwkk...",
+      ".kkwwwwwwwwwwwwwwwwwwkk.",
+      "kwwwwwwwwwwwwwwwwwwwwwwk",
+      "kwwwwwkwwwwwwwwwwkwwwwwk",
+      "kwppwwwkwwwwwwwwkwwwppwk",
+      "kwppwwkwwwwwwwwwwkwwppwk",
+      "kwwwwwwwwwkkkkwwwwwwwwwk",
+      ".kwwwwwwwwwwwwwwwwwwwwk.",
+      "..kwwwwwwwwwwwwwwwwwwk..",
+      "...kwwwwwwwwwwwwwwwwk...",
+      "....kggggggggggggggk....",
+      "....kwwwwkkwwkkwwwwk....",
+      "....kwwwklrkklrkwwwk....",
+      "....kwwwklrrrrrkwwwk....",
+      "....kkwwwkrrrrkwwwkk....",
+      "....kgkwwwkrrkwwwkgk....",
+      "....kggkwwwkkwwwkggk....",
+      ".....kggkkkggkkkggk.....",
+      "......kkkkkkkkkkkk......",
+      "........................"
+    ]
   ]
- ]
 }

@@ -64,6 +64,29 @@ Altta dolaşan karakterler `buddies/<id>.json` dosyalarından gelir (`palette` +
 - Dokun → zıplar, kalp saçar, bir şey söyler.
 - Bir ürün "Alındı" olunca hepsi birlikte zıplar.
 
+## Trendyol favorilerini aktarma
+
+Ahmet'in PC'sinde (Türkiye internetiyle) çalışır:
+
+```powershell
+cd "ev-listesi"
+node tools/import-trendyol.js "https://ty.gl/KOLEKSIYON-LINKI" "EV-ANAHTARI" sonra
+```
+
+- Koleksiyon ya da tek ürün linki verilebilir; isim + görsel + fiyat + link otomatik gelir.
+- Zaten listede olan isimler atlanır. Önce denemek için sona `--dry` ekle.
+- Not: Trendyol koleksiyonun sadece ilk ~10 ürününü dışarı verir; eksik kalanları ürün linkiyle tek tek ekleyebilirsin.
+
+## Kartta linkler ve otomatik doldurma
+
+- Bir üründe **birden fazla link** olabilir ("+ link ekle").
+- Yeni kartta Trendyol linki girilince site adı/görseli/fiyatı otomatik çekmeyi dener
+  (Trendyol bazen dışarıya kapalı — o zaman ipucu gösterir). Gelen görsel beğenilmezse
+  "Kaldır" deyip fotoğraf seçilebilir ya da 📋 ile panodan yapıştırılır.
+- Telefonda: Trendyol'da ürüne **Paylaş → Kopyala**, sitede **+ → 📋 Panodan yapıştır** —
+  link (ve paylaşımdaki ad) forma dolar. Android'de siteyi "Ana ekrana ekle" yaptıysan
+  Trendyol'dan doğrudan **Paylaş → Evim**'e de gönderebilirsin.
+
 ## Yedek
 
 ⚙ Ayarlar → **Yedek indir** bir JSON verir; **Yedek yükle** ile geri alınır. Bulut modunda zaten Supabase'de durur.

@@ -142,7 +142,7 @@
     tabs: $('#tabs'), board: $('#board'), dock: $('#dock'), addBtn: $('#addBtn'),
     backdrop: $('#sheetBackdrop'), sheet: $('#sheet'), settingsSheet: $('#settingsSheet'),
     form: $('#itemForm'), fEmoji: $('#fEmoji'), fName: $('#fName'), fCategory: $('#fCategory'), fPrice: $('#fPrice'),
-    fPlanned: $('#fPlanned'), fLink: $('#fLink'), fImgPreview: $('#fImgPreview'), fImageUrl: $('#fImageUrl'),
+    fPlanned: $('#fPlanned'), fLinks: $('#fLinks'), fLinkAdd: $('#fLinkAdd'), fPaste: $('#fPaste'), fMetaHint: $('#fMetaHint'), fImgPreview: $('#fImgPreview'), fImageUrl: $('#fImageUrl'),
     fImageFile: $('#fImageFile'), fImageClear: $('#fImageClear'), fNote: $('#fNote'),
     fDelete: $('#fDelete'), fBought: $('#fBought'), fSave: $('#fSave'),
     sTitle: $('#sTitle'), sBudget: $('#sBudget'), sExport: $('#sExport'), sImport: $('#sImport'), sSeed: $('#sSeed'), sKey: $('#sKey'), sBuddies: $('#sBuddies'), sInfo: $('#sInfo'), sSave: $('#sSave'),
@@ -275,7 +275,7 @@
     const thumb = i.image ? `<img src="${esc(i.image)}" alt="" loading="lazy" decoding="async">` : (i.emoji || '📦');
     const price = (i.price != null && i.price !== '' && !isNaN(i.price)) ? `<span class="price">${fmtTL(i.price)} TL</span>` : `<span class="price none">fiyat yok</span>`;
     const plan = (!bought && i.planned) ? `<span class="badge plan">bu ay</span>` : '';
-    const link = i.link ? `<a class="badge link" href="${esc(i.link)}" target="_blank" rel="noopener">Trendyol ↗</a>` : '';
+    const link = linksOf(i).map((u, idx) => `<a class="badge link" href="${esc(u)}" target="_blank" rel="noopener">${idx === 0 ? 'Trendyol ↗' : (idx + 1) + ' ↗'}</a>`).join('');
     const sub = i.note ? `<div class="sub">${esc(i.note)}</div>` : '';
     return `<article class="card ${bought ? 'bought' : ''} ${i.id === state.newId ? 'new' : ''}" data-id="${i.id}">
       <div class="thumb">${thumb}</div>
@@ -391,7 +391,7 @@
     setCategoryUI(i ? (CATS.includes(i.category) ? i.category : 'acil') : currentVisibleCat());
     el.fPrice.value = (i?.price ?? '') === '' || i?.price == null ? '' : i.price;
     el.fPlanned.checked = !!i?.planned;
-    el.fLink.value = i?.link || '';
+    el.fLinks.innerHTML = ''; const _ls = i ? linksOf(i) : []; (_ls.length ? _ls : ['']).forEach(v => addLinkRow(v)); el.fMetaHint.hidden = true;
     el.fNote.value = i?.note || '';
     setImageUI(i?.image || null);
     el.fDelete.hidden = !i;
@@ -424,7 +424,7 @@
     Object.assign(item, {
       name, emoji: el.fEmoji.value.trim() || null, category: cat,
       price: (price == null || isNaN(price)) ? null : price,
-      planned: el.fPlanned.checked, link: normalizeLink(el.fLink.value), note: el.fNote.value.trim() || null, image: image || null,
+      planned: el.fPlanned.checked, link: packLinks($$('input', el.fLinks).map(x => x.value)), note: el.fNote.value.trim() || null, image: image || null,
     });
     if (!existing) { state.items.push(item); state.newId = item.id; setTimeout(() => { state.newId = null; }, 600); }
     renderAll(); closeSheets();
@@ -435,6 +435,86 @@
     v = (v || '').trim(); if (!v) return null;
     if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
     return v;
+  }
+
+  function linksOf(i) {
+    const v = (i && i.link ? String(i.link) : "").trim(); if (!v) return [];
+    if (v.startsWith("[")) { try { const a = JSON.parse(v); return Array.isArray(a) ? a.filter(Boolean) : []; } catch { return []; } }
+    return [v];
+  }
+  function packLinks(arr) {
+    const a = arr.map(normalizeLink).filter(Boolean);
+    return a.length === 0 ? null : (a.length === 1 ? a[0] : JSON.stringify(a));
+  }
+  function addLinkRow(value) {
+    const row = document.createElement("div"); row.className = "link-row";
+    row.innerHTML = '<input class="px-input" type="text" placeholder="https://ty.gl/..." inputmode="url" autocapitalize="off"><button class="px-btn small ghost" type="button" title="Kaldır">✕</button>';
+    row.querySelector("input").value = value || "";
+    row.querySelector("button").addEventListener("click", () => { row.remove(); if (!el.fLinks.children.length) addLinkRow(""); });
+    el.fLinks.appendChild(row);
+    return row;
+  }
+  // Trendyol'dan isim/görsel/fiyat çekmeyi dene (r.jina.ai üzerinden; olmazsa sessizce vazgeç)
+  async function fetchTrendyolMeta(url) {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 16000);
+    try {
+      const res = await fetch("https://r.jina.ai/" + url, { signal: ctrl.signal, headers: { "Accept": "application/json", "X-Set-Cookie": "countryCode=TR; storefrontId=1; language=tr", "X-With-Images-Summary": "true" } });
+      if (!res.ok) return null;
+      const j = await res.json(); const d = (j && j.data) || {};
+      let title = (d.title || "").replace(/\s*-\s*Fiyatı.*$/i, "").replace(/\s*\|\s*Trendyol.*$/i, "").trim();
+      if (/Online Alışveriş Sitesi/i.test(d.title || "")) title = "";
+      const imgs = Object.values(d.images || {}).filter(u => /dsmcdn\.com/.test(u) && !/apple-icon|logo|icon-/i.test(u));
+      let price = null; const m = (d.content || "").match(/(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)\s*TL/); if (m) price = Number(m[1].replace(/\./g, "").replace(",", "."));
+      return (title || imgs.length) ? { title, image: imgs[0] || null, price } : null;
+    } catch { return null; } finally { clearTimeout(t); }
+  }
+  let autofillBusy = false;
+  async function maybeAutofill(url) {
+    url = normalizeLink(url); if (!url || autofillBusy) return;
+    if (!/trendyol\.com|ty\.gl/i.test(url)) return;
+    const needName = !el.fName.value.trim(), needImg = !state.sheetImage, needPrice = !el.fPrice.value;
+    if (!needName && !needImg && !needPrice) return;
+    autofillBusy = true;
+    el.fMetaHint.hidden = false; el.fMetaHint.textContent = "🔍 Trendyol'dan bilgi çekiliyor…";
+    const meta = await fetchTrendyolMeta(url);
+    autofillBusy = false;
+    if (!el.sheet || el.sheet.hidden) return;
+    if (meta && (meta.title || meta.image)) {
+      if (needName && meta.title) el.fName.value = meta.title.slice(0, 80);
+      if (needImg && meta.image) setImageUI(meta.image);
+      if (needPrice && meta.price) el.fPrice.value = meta.price;
+      el.fMetaHint.textContent = "✓ Trendyol'dan dolduruldu — bir kontrol et";
+    } else {
+      el.fMetaHint.textContent = "Otomatik çekemedim. Adı yaz; fotoğraf için Trendyol'da görsele uzun bas → Kopyala → burada 📋 ile yapıştır.";
+    }
+  }
+  function applySharedText(text) {
+    const urls = (text.match(/https?:\/\/\S+/g) || []).map(u => u.replace(/[),.;]+$/, ""));
+    const rest = text.replace(/https?:\/\/\S+/g, " ").replace(/Trendyol'?da gördüm[^:]*:?/i, " ").replace(/\s+/g, " ").trim();
+    if (urls.length) { el.fLinks.innerHTML = ""; urls.forEach(u => addLinkRow(u)); }
+    if (rest.length > 3 && !el.fName.value.trim()) el.fName.value = rest.slice(0, 80);
+    if (urls.length) maybeAutofill(urls[0]);
+  }
+  async function pasteFromClipboard() {
+    try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const items = await navigator.clipboard.read();
+        for (const it of items) {
+          const t = (it.types || []).find(x => x.startsWith("image/"));
+          if (t) { const blob = await it.getType(t); setImageUI(await shrinkImage(blob)); toast("Fotoğraf yapıştırıldı 🖼️"); return; }
+        }
+      }
+    } catch {}
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text || !text.trim()) { toast("Panoda bir şey bulamadım"); return; }
+      applySharedText(text.trim());
+    } catch { toast("Panoya erişemedim — linki elle yapıştır"); }
+  }
+  function consumePendingShare() {
+    if (!state.pendingShare) return;
+    const t = state.pendingShare; state.pendingShare = null;
+    openSheet(null); applySharedText(t);
   }
   async function deleteCurrent() {
     const item = state.items.find(x => x.id === state.editingId); if (!item) return;
@@ -566,7 +646,28 @@
     } else {
       await start();
     }
+    showWelcome();
+    if ($('#welcome').hidden) consumePendingShare();
     return true;
+  }
+
+  // ---------------------------------------------------------------- hoş geldin
+  function showWelcome() {
+    const w = window.EV_WELCOME || {};
+    if (!w.text || lsGet('ev.welcomed', false)) return;
+    const box = $('#welcome'); if (!box) return;
+    renderHouse($('#welcomeHouse')); setHouseProgress($('#welcomeHouse'), 1);
+    $('#welcomeTitle').textContent = w.title || 'Hoş geldin ♥';
+    $('#welcomeText').textContent = w.text;
+    $('#welcomeSign').textContent = w.sign || '';
+    $('#welcomeBtn').textContent = w.button || 'Eve gir ♥';
+    box.hidden = false;
+    $('#welcomeBtn').onclick = () => {
+      lsSet('ev.welcomed', true); box.hidden = true;
+      confetti(40); try { window.EV_BUDDY_CHEER?.(); } catch {}
+      el.house.classList.add('party'); setTimeout(() => el.house.classList.remove('party'), 1600);
+      consumePendingShare();
+    };
   }
 
   // ---------------------------------------------------------------- olaylar
@@ -584,6 +685,13 @@
       try { setImageUI(await shrinkImage(f)); } catch { toast('Fotoğraf okunamadı'); }
     });
     el.fImageClear.addEventListener('click', () => setImageUI(null));
+    el.fLinkAdd.addEventListener('click', () => { addLinkRow('').querySelector('input').focus(); });
+    el.fPaste.addEventListener('click', pasteFromClipboard);
+    el.fLinks.addEventListener('change', e => { const inp = e.target.closest('input'); if (inp) maybeAutofill(inp.value); });
+    el.sheet.addEventListener('paste', e => {
+      const f = [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
+      if (f) { e.preventDefault(); shrinkImage(f).then(d => { setImageUI(d); toast('Fotoğraf yapıştırıldı 🖼️'); }).catch(() => {}); }
+    });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheets(); });
 
     $('#settingsBtn').addEventListener('click', () => openSettings(false));
@@ -617,10 +725,16 @@
   async function boot() {
     renderHouse(el.house);
     bindEvents();
+    try {
+      const sp = new URLSearchParams(location.search);
+      const sharedRaw = [sp.get('title'), sp.get('text'), sp.get('url')].filter(Boolean).join(' ').trim();
+      if (sharedRaw) { state.pendingShare = sharedRaw; history.replaceState(null, '', location.pathname); }
+    } catch {}
     if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
 
     const cfg = window.EV_CONFIG || {};
-    const cloudReady = cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && window.supabase;
+    let forceDemo = false; try { forceDemo = new URLSearchParams(location.search).has('demo'); } catch {}
+    const cloudReady = !forceDemo && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && window.supabase;
     if (cloudReady) {
       const cached = lsGet('ev.cache', null);
       if (cached) { applyData(cached); renderAll(); }
@@ -630,8 +744,9 @@
     } else {
       state.store = new DemoStore();
       el.cloudBadge.hidden = false; el.cloudBadge.className = 'cloud-badge off';
-      el.cloudBadge.textContent = cfg.SUPABASE_URL ? 'Bulut kütüphanesi yüklenemedi · demo mod' : 'Demo mod · veri sadece bu cihazda';
+      el.cloudBadge.textContent = forceDemo ? 'Demo önizleme · veri sadece bu cihazda' : (cfg.SUPABASE_URL ? 'Bulut kütüphanesi yüklenemedi · demo mod' : 'Demo mod · veri sadece bu cihazda');
       await start();
+      consumePendingShare();
     }
   }
   boot();

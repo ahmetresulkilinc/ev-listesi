@@ -404,6 +404,9 @@ body.dragging .fab { opacity: 0; pointer-events: none; }
 .img-preview img { width: 100%; height: 100%; object-fit: cover; }
 .img-actions { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .img-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.links { display: flex; flex-direction: column; gap: 8px; }
+.link-row { display: flex; gap: 8px; align-items: center; }
+.link-row .px-btn { flex: 0 0 auto; width: 38px; height: 38px; padding: 0; }
 
 .sheet-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 6px; flex-wrap: wrap; }
 .sheet-actions #fDelete { margin-right: auto; }
@@ -416,6 +419,14 @@ body.dragging .fab { opacity: 0; pointer-events: none; }
 .gate-text { margin: 0 0 16px; color: var(--ink-soft); }
 .gate-form { display: flex; flex-direction: column; gap: 10px; }
 .gate-error { color: #b3213f; margin: 12px 0 0; }
+
+/* hoş geldin */
+.welcome { z-index: 95; background: rgba(255,238,243,.96); }
+.welcome .gate-box { animation: pop-welcome .45s var(--ease-spring) both; }
+@keyframes pop-welcome { from { transform: scale(.9) translateY(12px); opacity: 0 } to { transform: none; opacity: 1 } }
+.welcome-text { margin: 0 0 10px; white-space: pre-line; text-align: left; line-height: 1.25; font-size: 20px; }
+.welcome-sign { margin: 0 0 18px; text-align: right; color: var(--ink-soft); font-size: 18px; }
+.welcome .pixel-house { filter: drop-shadow(0 4px 0 var(--acil-soft)); }
 
 /* ---------- toast & konfeti ---------- */
 .toast {
@@ -474,6 +485,22 @@ body.sheet-open #buddyLayer .buddy { pointer-events: none; }
   animation: bheart .8s var(--ease) forwards;
 }
 @keyframes bheart { from { transform: translate(0,0) scale(.6); opacity: 1 } to { transform: translate(var(--dx), -52px) scale(1.15); opacity: 0 } }
+
+.bdust {
+  position: absolute; width: 7px; height: 7px; pointer-events: none;
+  background: #e3d1da; border-radius: 2px;
+  animation: bdust .5s ease-out forwards;
+}
+@keyframes bdust { from { transform: translate(0,0) scale(1); opacity: .9 } to { transform: translate(var(--dx), -10px) scale(.4); opacity: 0 } }
+.bstar {
+  position: absolute; width: 8px; height: 8px; pointer-events: none;
+  background: var(--orta);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: bstar .55s ease-out forwards;
+}
+@keyframes bstar { from { transform: translate(0,0) scale(.6) rotate(0); opacity: 1 } to { transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(120deg); opacity: 0 } }
+.fab.nudge { animation: fab-nudge .45s var(--ease-spring); }
+@keyframes fab-nudge { 0% { transform: translateY(0) rotate(0) } 30% { transform: translateY(-6px) rotate(-6deg) } 60% { transform: translateY(0) rotate(4deg) } 100% { transform: translateY(0) rotate(0) } }
 
 /* ---------- masaüstü ---------- */
 @media (min-width: 900px) {

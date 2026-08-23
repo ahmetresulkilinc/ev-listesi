@@ -130,6 +130,7 @@
     settings: { title: "Cemre'nin Evi", budget: 0, budget_month: thisMonth() },
     editingId: null,
     sheetImage: null,
+    openModels: new Set(),
     newId: null,
     folded: lsGet('ev.folded', false),
     loaded: false,
@@ -258,7 +259,7 @@
       const tot = sumPrice(items);
       $('.tot', col).textContent = tot ? fmtTL(tot) + ' TL' : (c.hint || '');
       const list = $('.list', col);
-      list.innerHTML = items.map(cardHTML).join('') || emptyHTML(c.key);
+      list.innerHTML = items.map(it => cardHTML(it) + (state.openModels.has(it.id) && linksOf(it).length > 1 ? modelsHTML(it) : '')).join('') || emptyHTML(c.key);
     });
   }
   function emptyHTML(col) {
@@ -270,12 +271,18 @@
     }[col];
     return `<div class="empty"><span class="zz">${col === 'alindi' ? '🐾' : '😴'}</span>${msg}</div>`;
   }
+  function modelsHTML(i) {
+    const rows = linksOf(i).map((l, idx) => `<a class="model-row" href="${esc(l.u)}" target="_blank" rel="noopener">${l.i ? `<img src="${esc(l.i)}" loading="lazy" alt="">` : `<span class="mr-ph">${idx + 1}</span>`}<span class="mr-name">${esc(l.n || 'Model ' + (idx + 1))}</span>${l.p != null ? `<b>${fmtTL(l.p)} TL</b>` : ''}<span class="mr-go">↗</span></a>`).join('');
+    return `<div class="models-list">${rows}</div>`;
+  }
   function cardHTML(i) {
     const bought = i.status === 'alindi';
     const thumb = i.image ? `<img src="${esc(i.image)}" alt="" loading="lazy" decoding="async">` : (i.emoji || '📦');
     const price = (i.price != null && i.price !== '' && !isNaN(i.price)) ? `<span class="price">${fmtTL(i.price)} TL</span>` : `<span class="price none">fiyat yok</span>`;
     const plan = (!bought && i.planned) ? `<span class="badge plan">bu ay</span>` : '';
-    const link = linksOf(i).map((u, idx) => `<a class="badge link" href="${esc(u)}" target="_blank" rel="noopener">${idx === 0 ? 'Trendyol ↗' : (idx + 1) + ' ↗'}</a>`).join('');
+    const _links = linksOf(i);
+    const link = (_links[0] ? `<a class="badge link" href="${esc(_links[0].u)}" target="_blank" rel="noopener">Trendyol ↗</a>` : '')
+      + (_links.length > 1 ? `<button class="badge models" type="button" data-act="models">🛍️ ${_links.length} model ${state.openModels.has(i.id) ? '▴' : '▾'}</button>` : '');
     const sub = i.note ? `<div class="sub">${esc(i.note)}</div>` : '';
     return `<article class="card ${bought ? 'bought' : ''} ${i.id === state.newId ? 'new' : ''}" data-id="${i.id}">
       <div class="thumb">${thumb}</div>
@@ -362,6 +369,7 @@
     const id = card.dataset.id;
     const act = e.target.closest('[data-act]');
     if (act?.dataset.act === 'toggle') { e.preventDefault(); toggleBought(id); return; }
+    if (act?.dataset.act === 'models') { e.preventDefault(); if (state.openModels.has(id)) state.openModels.delete(id); else state.openModels.add(id); renderBoard(); return; }
     if (e.target.closest('a')) return;
     openSheet(id);
   }
@@ -424,8 +432,9 @@
     Object.assign(item, {
       name, emoji: el.fEmoji.value.trim() || null, category: cat,
       price: (price == null || isNaN(price)) ? null : price,
-      planned: el.fPlanned.checked, link: packLinks($$('input', el.fLinks).map(x => x.value)), note: el.fNote.value.trim() || null, image: image || null,
+      planned: el.fPlanned.checked, link: packLinks(collectLinkRows()), note: el.fNote.value.trim() || null, image: image || null,
     });
+    if (!item.image) { const fv = linksOf(item).find(l => l.i); if (fv) item.image = fv.i; }
     if (!existing) { state.items.push(item); state.newId = item.id; setTimeout(() => { state.newId = null; }, 600); }
     renderAll(); closeSheets();
     toast(existing ? 'Kaydedildi' : 'Eklendi ✨');
@@ -437,19 +446,42 @@
     return v;
   }
 
+  function linkObj(v) {
+    if (!v) return null;
+    if (typeof v === "string") { const u = normalizeLink(v); return u ? { u } : null; }
+    if (typeof v === "object" && v.u) { const u = normalizeLink(v.u); if (!u) return null; const p = v.p == null || v.p === "" ? null : Number(v.p); return { u, n: v.n || null, p: isNaN(p) ? null : p, i: v.i || null }; }
+    return null;
+  }
   function linksOf(i) {
-    const v = (i && i.link ? String(i.link) : "").trim(); if (!v) return [];
-    if (v.startsWith("[")) { try { const a = JSON.parse(v); return Array.isArray(a) ? a.filter(Boolean) : []; } catch { return []; } }
-    return [v];
+    const raw = (i && i.link ? String(i.link) : "").trim(); if (!raw) return [];
+    if (raw.startsWith("[")) { try { const a = JSON.parse(raw); return (Array.isArray(a) ? a : []).map(linkObj).filter(Boolean); } catch { return []; } }
+    const u = normalizeLink(raw); return u ? [{ u }] : [];
   }
   function packLinks(arr) {
-    const a = arr.map(normalizeLink).filter(Boolean);
-    return a.length === 0 ? null : (a.length === 1 ? a[0] : JSON.stringify(a));
+    const a = arr.map(linkObj).filter(Boolean);
+    if (!a.length) return null;
+    if (a.length === 1 && !a[0].n && !a[0].i && a[0].p == null) return a[0].u;
+    return JSON.stringify(a);
+  }
+  function collectLinkRows() {
+    return $$('.link-row', el.fLinks).map(row => {
+      let meta = {}; try { meta = JSON.parse(row.dataset.meta || '{}'); } catch {}
+      return { u: row.querySelector('input').value, n: meta.n || null, p: meta.p == null ? null : meta.p, i: meta.i || null };
+    });
+  }
+  function setRowMeta(row, m) {
+    const has = m && (m.n || m.p != null || m.i);
+    row.dataset.meta = JSON.stringify(has ? { n: m.n || null, p: m.p == null ? null : m.p, i: m.i || null } : {});
+    const box = row.querySelector('.link-meta'); if (!box) return;
+    box.hidden = !has;
+    box.innerHTML = has ? `${m.i ? `<img src="${esc(m.i)}" alt="" loading="lazy">` : ''}<span class="lm-name">${esc(m.n || '')}</span>${m.p != null ? `<b>${fmtTL(m.p)} TL</b>` : ''}` : '';
   }
   function addLinkRow(value) {
+    const v = typeof value === "string" ? { u: value } : (value || {});
     const row = document.createElement("div"); row.className = "link-row";
-    row.innerHTML = '<input class="px-input" type="text" placeholder="https://ty.gl/..." inputmode="url" autocapitalize="off"><button class="px-btn small ghost" type="button" title="Kaldır">✕</button>';
-    row.querySelector("input").value = value || "";
+    row.innerHTML = '<div class="link-main"><input class="px-input" type="text" placeholder="https://ty.gl/..." inputmode="url" autocapitalize="off"><div class="link-meta" hidden></div></div><button class="px-btn small ghost" type="button" title="Kaldır">✕</button>';
+    row.querySelector("input").value = v.u || "";
+    setRowMeta(row, v);
     row.querySelector("button").addEventListener("click", () => { row.remove(); if (!el.fLinks.children.length) addLinkRow(""); });
     el.fLinks.appendChild(row);
     return row;
@@ -468,21 +500,24 @@
       return (title || imgs.length) ? { title, image: imgs[0] || null, price } : null;
     } catch { return null; } finally { clearTimeout(t); }
   }
-  let autofillBusy = false;
-  async function maybeAutofill(url) {
-    url = normalizeLink(url); if (!url || autofillBusy) return;
-    if (!/trendyol\.com|ty\.gl/i.test(url)) return;
-    const needName = !el.fName.value.trim(), needImg = !state.sheetImage, needPrice = !el.fPrice.value;
-    if (!needName && !needImg && !needPrice) return;
-    autofillBusy = true;
+  async function autofillRow(row) {
+    if (!row || row.dataset.busy) return;
+    const url = normalizeLink(row.querySelector('input').value);
+    if (!url || !/trendyol\.com|ty\.gl/i.test(url)) return;
+    let meta0 = {}; try { meta0 = JSON.parse(row.dataset.meta || '{}'); } catch {}
+    if (meta0.n || meta0.i) return; // zaten dolu
+    row.dataset.busy = '1';
     el.fMetaHint.hidden = false; el.fMetaHint.textContent = "🔍 Trendyol'dan bilgi çekiliyor…";
     const meta = await fetchTrendyolMeta(url);
-    autofillBusy = false;
-    if (!el.sheet || el.sheet.hidden) return;
+    delete row.dataset.busy;
+    if (!el.sheet || el.sheet.hidden || !row.isConnected) return;
     if (meta && (meta.title || meta.image)) {
-      if (needName && meta.title) el.fName.value = meta.title.slice(0, 80);
-      if (needImg && meta.image) setImageUI(meta.image);
-      if (needPrice && meta.price) el.fPrice.value = meta.price;
+      setRowMeta(row, { n: meta.title ? meta.title.slice(0, 80) : null, p: meta.price == null ? null : meta.price, i: meta.image || null });
+      if (row === $('.link-row', el.fLinks)) {
+        if (!el.fName.value.trim() && meta.title) el.fName.value = meta.title.slice(0, 80);
+        if (!state.sheetImage && meta.image) setImageUI(meta.image);
+        if (!el.fPrice.value && meta.price) el.fPrice.value = meta.price;
+      }
       el.fMetaHint.textContent = "✓ Trendyol'dan dolduruldu — bir kontrol et";
     } else {
       el.fMetaHint.textContent = "Otomatik çekemedim. Adı yaz; fotoğraf için Trendyol'da görsele uzun bas → Kopyala → burada 📋 ile yapıştır.";
@@ -493,7 +528,7 @@
     const rest = text.replace(/https?:\/\/\S+/g, " ").replace(/Trendyol'?da gördüm[^:]*:?/i, " ").replace(/\s+/g, " ").trim();
     if (urls.length) { el.fLinks.innerHTML = ""; urls.forEach(u => addLinkRow(u)); }
     if (rest.length > 3 && !el.fName.value.trim()) el.fName.value = rest.slice(0, 80);
-    if (urls.length) maybeAutofill(urls[0]);
+    $$('.link-row', el.fLinks).slice(0, 3).forEach(r => autofillRow(r));
   }
   async function pasteFromClipboard() {
     try {
@@ -687,7 +722,7 @@
     el.fImageClear.addEventListener('click', () => setImageUI(null));
     el.fLinkAdd.addEventListener('click', () => { addLinkRow('').querySelector('input').focus(); });
     el.fPaste.addEventListener('click', pasteFromClipboard);
-    el.fLinks.addEventListener('change', e => { const inp = e.target.closest('input'); if (inp) maybeAutofill(inp.value); });
+    el.fLinks.addEventListener('change', e => { const row = e.target.closest('.link-row'); if (row) { row.dataset.meta = '{}'; setRowMeta(row, {}); autofillRow(row); } });
     el.sheet.addEventListener('paste', e => {
       const f = [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
       if (f) { e.preventDefault(); shrinkImage(f).then(d => { setImageUI(d); toast('Fotoğraf yapıştırıldı 🖼️'); }).catch(() => {}); }

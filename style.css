@@ -405,8 +405,28 @@ body.dragging .fab { opacity: 0; pointer-events: none; }
 .img-actions { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .img-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .links { display: flex; flex-direction: column; gap: 8px; }
-.link-row { display: flex; gap: 8px; align-items: center; }
+.link-row { display: flex; gap: 8px; align-items: flex-start; }
 .link-row .px-btn { flex: 0 0 auto; width: 38px; height: 38px; padding: 0; }
+.link-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.link-meta { display: flex; align-items: center; gap: 6px; font-size: 15px; color: var(--ink-soft); padding: 0 2px; }
+.link-meta img { width: 26px; height: 26px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line-soft); flex: 0 0 auto; }
+.link-meta .lm-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.link-meta b { font-weight: normal; color: var(--ink); flex: 0 0 auto; }
+.badge.models { border-color: var(--lav-deep); background: var(--lav); cursor: pointer; font-family: var(--body); font-size: 15px; line-height: 1.2; padding: 1px 7px; }
+.models-list { margin: -4px 2px 2px 16px; border-left: 3px solid var(--c-deep); padding: 4px 0 4px 8px; display: flex; flex-direction: column; gap: 6px; }
+.model-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--paper); border: var(--bw) solid var(--line-soft); border-radius: var(--r-sm);
+  padding: 6px 8px; text-decoration: none; color: var(--ink);
+  box-shadow: 0 2px 0 var(--shade);
+  animation: plop var(--dur-2) var(--ease);
+}
+.model-row:active { transform: translateY(2px); box-shadow: none; }
+.model-row img { width: 34px; height: 34px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line-soft); flex: 0 0 auto; }
+.mr-ph { width: 34px; height: 34px; border-radius: 8px; background: var(--paper-2); border: 1px solid var(--line-soft); display: grid; place-items: center; font-size: 16px; color: var(--ink-soft); flex: 0 0 auto; }
+.mr-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 18px; line-height: 1.15; }
+.model-row b { font-weight: normal; font-family: var(--display); font-size: 9px; background: var(--ink); color: #fff; padding: 4px 5px; border-radius: var(--r-xs); flex: 0 0 auto; }
+.mr-go { color: var(--sonra-deep); flex: 0 0 auto; }
 
 .sheet-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 6px; flex-wrap: wrap; }
 .sheet-actions #fDelete { margin-right: auto; }

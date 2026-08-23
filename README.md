@@ -79,7 +79,10 @@ node tools/import-trendyol.js "https://ty.gl/KOLEKSIYON-LINKI" "EV-ANAHTARI" son
 
 ## Kartta linkler ve otomatik doldurma
 
-- Bir üründe **birden fazla link** olabilir ("+ link ekle").
+- Bir kart bir eşyadır ("Puf"), altına **birden fazla model** bağlanır ("+ link ekle"):
+  her model kendi linki/adı/görseli/fiyatıyla saklanır. Kartta "🛍️ N model" rozetine
+  basınca modeller kartın altında sıralanır; her satır Trendyol'a gider.
+- Koleksiyondaki çeşitleri tek karta toplamak için: `node tools/import-trendyol.js "<link>" "<anahtar>" orta --kart "Puf"`
 - Yeni kartta Trendyol linki girilince site adı/görseli/fiyatı otomatik çekmeyi dener
   (Trendyol bazen dışarıya kapalı — o zaman ipucu gösterir). Gelen görsel beğenilmezse
   "Kaldır" deyip fotoğraf seçilebilir ya da 📋 ile panodan yapıştırılır.

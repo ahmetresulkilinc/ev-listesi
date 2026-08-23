@@ -1,5 +1,5 @@
 /* Basit kabuk önbelleği: site offline da açılır, veri internetle gelir. */
-const VERSION = 'ev-v4';
+const VERSION = 'ev-v5';
 const SHELL = ['./', './index.html', './style.css', './app.js', './config.js', './seed.js', './buddies.js', './buddies-data.js', './manifest.webmanifest', './icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {

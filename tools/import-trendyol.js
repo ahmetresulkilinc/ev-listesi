@@ -1,19 +1,17 @@
 // Trendyol → Ev Listesi aktarıcı (Ahmet'in PC'sinde çalışır; Türkiye IP gerekir).
 //
 // Kullanım:
-//   node tools/import-trendyol.js "<trendyol-linki>" "<ev-anahtari>" [kategori] [--dry]
+//   node tools/import-trendyol.js "<trendyol-linki>" "<ev-anahtari>" [kategori] [--dry] [--kart "Kart Adı"]
 //
-//   <trendyol-linki> : ty.gl kısa link, koleksiyon linki ya da tek ürün linki olabilir.
+//   <trendyol-linki> : ty.gl kısa link, koleksiyon linki ya da tek ürün linki.
 //   [kategori]       : acil | orta | sonra  (varsayılan: sonra)
 //   --dry            : veritabanına yazmadan sadece ne bulacağını gösterir.
+//   --kart "Ad"      : bulunan TÜM ürünleri ayrı kartlar yerine tek bir kartın
+//                      "modelleri" olarak ekler (kart yoksa oluşturur). Örn. puf çeşitleri.
 //
-// Örnek:
+// Örnekler:
 //   node tools/import-trendyol.js "https://ty.gl/o30xpfqq6vc8r" "cemre-mavi-ev" sonra
-//
-// Notlar:
-// - Aynı isimli ürünler (evde zaten olanlar) atlanır.
-// - Koleksiyon sayfasında gömülü gelen ürünler aktarılır; Trendyol sayfalamayı
-//   dışarı açmıyorsa koleksiyonun tamamı gelmeyebilir (kaç/kaç aktarıldığı yazılır).
+//   node tools/import-trendyol.js "https://ty.gl/xxxx" "cemre-mavi-ev" orta --kart "Makyaj pufu"
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -47,6 +45,20 @@ function priceOf(p) {
   const cands = [p?.price?.discountedPrice?.value, p?.price?.sellingPrice?.value, p?.price?.originalPrice?.value, p?.favoritedPrice, p?.price];
   for (const c of cands) { const n = typeof c === 'string' ? Number(c.replace(/\./g, '').replace(',', '.')) : c; if (typeof n === 'number' && isFinite(n) && n > 0) return Math.round(n * 100) / 100; }
   return null;
+}
+// site ile aynı format: link sütunu ya düz URL ya da [{u,n,p,i}] JSON'u
+function linksOf(raw) {
+  raw = (raw || '').trim(); if (!raw) return [];
+  if (raw.startsWith('[')) {
+    try { return JSON.parse(raw).map(v => typeof v === 'string' ? { u: v } : v).filter(v => v && v.u); } catch { return []; }
+  }
+  return [{ u: raw }];
+}
+function packLinks(a) {
+  a = a.filter(v => v && v.u);
+  if (!a.length) return null;
+  if (a.length === 1 && !a[0].n && !a[0].i && a[0].p == null) return a[0].u;
+  return JSON.stringify(a);
 }
 
 async function parseProductPage(url) {
@@ -85,7 +97,6 @@ async function parseCollection(firstHtml, firstUrl) {
     return added;
   };
   collect(firstHtml);
-  // sayfalama dene (Trendyol her zaman açmıyor; yeni ürün gelmezse dur)
   const base = firstUrl.split('#')[0];
   for (let pg = 2; pg <= 8; pg++) {
     if (total != null && out.size >= total) break;
@@ -96,15 +107,21 @@ async function parseCollection(firstHtml, firstUrl) {
 }
 
 (async () => {
-  const [, , inputUrl, houseKey, catArg, dryArg] = process.argv;
-  const dry = process.argv.includes('--dry');
+  const argv = process.argv.slice(2);
+  const dry = argv.includes('--dry');
+  let kart = null;
+  const ki = argv.indexOf('--kart');
+  if (ki >= 0) { kart = argv[ki + 1]; argv.splice(ki, 2); }
+  const clean = argv.filter(a => a !== '--dry');
+  const [inputUrl, houseKey, catArg] = clean;
   const category = ['acil', 'orta', 'sonra'].includes(catArg) ? catArg : 'sonra';
   if (!inputUrl || (!houseKey && !dry)) {
-    console.log('Kullanım: node tools/import-trendyol.js "<link>" "<ev-anahtari>" [acil|orta|sonra] [--dry]');
+    console.log('Kullanım: node tools/import-trendyol.js "<link>" "<ev-anahtari>" [acil|orta|sonra] [--dry] [--kart "Ad"]');
     process.exit(1);
   }
   const { url: SB, key: ANON } = conf();
   const sb = (p, opt = {}) => fetch(SB + '/rest/v1/' + p, { ...opt, headers: { apikey: ANON, Authorization: 'Bearer ' + ANON, 'x-house-key': houseKey || '', 'Content-Type': 'application/json', Prefer: 'return=minimal', ...(opt.headers || {}) } });
+  const nowISO = () => new Date().toISOString();
 
   console.log('Link açılıyor:', inputUrl);
   const first = await get(inputUrl);
@@ -119,23 +136,50 @@ async function parseCollection(firstHtml, firstUrl) {
   console.log(`Bulunan ürün: ${found.items.length}${found.total ? ' / koleksiyon toplamı ' + found.total : ''}`);
   found.items.forEach((p, i) => console.log(`  ${String(i + 1).padStart(2)}. ${p.name}${p.price ? ' — ' + p.price + ' TL' : ''}`));
   if (found.total && found.items.length < found.total) console.log(`⚠ Trendyol sayfalamayı vermedi: ${found.total - found.items.length} ürün eksik. Eksikleri ürün linkiyle tek tek ekleyebilirsin.`);
+  if (kart) console.log(`Mod: hepsi tek karta model olarak bağlanacak → "${kart}"`);
   if (dry) { console.log('(--dry: veritabanına yazılmadı)'); return; }
 
-  // mevcutlarla kıyasla
-  const exRes = await sb('items?select=name,sort_order');
+  const exRes = await sb('items?select=id,name,link,image,sort_order');
   if (!exRes.ok) { console.error('Supabase okunamadı: HTTP ' + exRes.status); process.exit(1); }
   const existing = await exRes.json();
-  const norm = (t) => t.toLocaleLowerCase('tr').replace(/[^a-zçğıöşü0-9]+/g, ' ').trim();
-  const have = new Set(existing.map(e => norm(e.name)));
+  const norm = (t) => (t || '').toLocaleLowerCase('tr').replace(/[^a-zçğıöşü0-9]+/g, ' ').trim();
   let order = existing.reduce((m, e) => Math.max(m, e.sort_order || 0), 0) + 1;
 
+  if (kart) {
+    // tek kart + modeller
+    const target = existing.find(e => norm(e.name) === norm(kart));
+    const newVariants = found.items.map(p => ({ u: p.link, n: p.name, p: p.price, i: p.image })).filter(v => v.u);
+    if (target) {
+      const cur = linksOf(target.link);
+      const seen = new Set(cur.map(v => v.u));
+      const merged = cur.concat(newVariants.filter(v => !seen.has(v.u)));
+      const addedN = merged.length - cur.length;
+      const body = { link: packLinks(merged), updated_at: nowISO() };
+      if (!target.image && merged.find(v => v.i)) body.image = merged.find(v => v.i).i;
+      const up = await sb('items?id=eq.' + target.id, { method: 'PATCH', body: JSON.stringify(body) });
+      if (!up.ok) { console.error('Güncelleme hatası: HTTP ' + up.status, await up.text()); process.exit(1); }
+      console.log(`✓ "${target.name}" kartına ${addedN} yeni model eklendi (toplam ${merged.length}).`);
+    } else {
+      const row = {
+        house_key: houseKey, name: kart, category, status: 'bekliyor', planned: false,
+        price: null, link: packLinks(newVariants), note: 'Trendyol modelleri', image: newVariants.find(v => v.i)?.i || null,
+        emoji: '🛍️', sort_order: order, created_at: nowISO(), updated_at: nowISO(),
+      };
+      const ins = await sb('items', { method: 'POST', body: JSON.stringify([row]) });
+      if (!ins.ok) { console.error('Yazma hatası: HTTP ' + ins.status, await ins.text()); process.exit(1); }
+      console.log(`✓ "${kart}" kartı ${newVariants.length} modelle oluşturuldu (${category}).`);
+    }
+    return;
+  }
+
+  const have = new Set(existing.map(e => norm(e.name)));
   const rows = [];
   for (const p of found.items) {
     if (have.has(norm(p.name))) { console.log('  atlandı (zaten var):', p.name); continue; }
     rows.push({
       house_key: houseKey, name: p.name, category, status: 'bekliyor', planned: false,
       price: p.price, link: p.link, note: 'Trendyol favorisi', image: p.image, emoji: '🛍️',
-      sort_order: order++, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      sort_order: order++, created_at: nowISO(), updated_at: nowISO(),
     });
   }
   if (!rows.length) { console.log('Eklenecek yeni ürün yok (hepsi zaten listede).'); return; }

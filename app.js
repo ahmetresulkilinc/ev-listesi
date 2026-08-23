@@ -130,6 +130,7 @@
     settings: { title: "Cemre'nin Evi", budget: 0, budget_month: thisMonth() },
     editingId: null,
     sheetImage: null,
+    newId: null,
     folded: lsGet('ev.folded', false),
     loaded: false,
   };
@@ -144,7 +145,7 @@
     fPlanned: $('#fPlanned'), fLink: $('#fLink'), fImgPreview: $('#fImgPreview'), fImageUrl: $('#fImageUrl'),
     fImageFile: $('#fImageFile'), fImageClear: $('#fImageClear'), fNote: $('#fNote'),
     fDelete: $('#fDelete'), fBought: $('#fBought'), fSave: $('#fSave'),
-    sTitle: $('#sTitle'), sBudget: $('#sBudget'), sExport: $('#sExport'), sImport: $('#sImport'), sSeed: $('#sSeed'), sKey: $('#sKey'), sInfo: $('#sInfo'), sSave: $('#sSave'),
+    sTitle: $('#sTitle'), sBudget: $('#sBudget'), sExport: $('#sExport'), sImport: $('#sImport'), sSeed: $('#sSeed'), sKey: $('#sKey'), sBuddies: $('#sBuddies'), sInfo: $('#sInfo'), sSave: $('#sSave'),
     toast: $('#toast'), confetti: $('#confetti'),
   };
 
@@ -154,6 +155,7 @@
     el.toast.textContent = msg; el.toast.hidden = false;
     clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.toast.hidden = true; }, ms);
   }
+  window.EV_CONFETTI = () => confetti(22);
   function confetti(n = 26) {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const colors = ['#ff7a9a', '#ffd95c', '#8fcdff', '#7fe0b2', '#d4c8ff', '#fff'];
@@ -207,8 +209,8 @@
     el.hp.classList.toggle('over', b.budget > 0 && b.spent + b.planned > b.budget);
     el.sumSpent.textContent = fmtTL(b.spent) + ' TL';
     el.sumPlanned.textContent = fmtTL(b.planned) + ' TL';
-    el.sumLeft.textContent = fmtTL(b.left) + ' TL';
-    el.sumLeft.classList.toggle('neg', b.left < 0);
+    el.sumLeft.textContent = b.budget ? fmtTL(b.left) + ' TL' : '—';
+    el.sumLeft.classList.toggle('neg', b.budget > 0 && b.left < 0);
   }
   function renderTabs() {
     if (!el.tabs.children.length) {
@@ -275,7 +277,7 @@
     const plan = (!bought && i.planned) ? `<span class="badge plan">bu ay</span>` : '';
     const link = i.link ? `<a class="badge link" href="${esc(i.link)}" target="_blank" rel="noopener">Trendyol ↗</a>` : '';
     const sub = i.note ? `<div class="sub">${esc(i.note)}</div>` : '';
-    return `<article class="card ${bought ? 'bought' : ''}" data-id="${i.id}">
+    return `<article class="card ${bought ? 'bought' : ''} ${i.id === state.newId ? 'new' : ''}" data-id="${i.id}">
       <div class="thumb">${thumb}</div>
       <div class="body"><div class="name">${esc(i.name)}</div>${sub}</div>
       <div class="foot">${price}${plan}${link}</div>
@@ -343,6 +345,7 @@
 
   function celebrate() {
     confetti();
+    try { window.EV_BUDDY_CHEER?.(); } catch {}
     const total = state.items.length, done = state.items.filter(i => i.status === 'alindi').length;
     if (total && done === total) { toast('Ev tamam! 🏠✨'); el.house.classList.add('party'); setTimeout(() => el.house.classList.remove('party'), 1600); }
     else if (total && [0.25, 0.5, 0.75].some(p => done / total >= p && (done - 1) / total < p)) { el.house.classList.add('party'); setTimeout(() => el.house.classList.remove('party'), 1600); }
@@ -395,7 +398,7 @@
     el.fBought.hidden = !i;
     el.fBought.textContent = i?.status === 'alindi' ? '↩ Geri al' : '✓ Alındı';
     el.fSave.textContent = i ? 'Kaydet' : 'Ekle';
-    el.backdrop.hidden = false; el.sheet.hidden = false;
+    el.backdrop.hidden = false; el.sheet.hidden = false; document.body.classList.add('sheet-open');
     if (!i) setTimeout(() => el.fName.focus(), 50);
   }
   function currentVisibleCat() {
@@ -403,7 +406,7 @@
     return CATS.includes(active) ? active : 'acil';
   }
   function closeSheets() {
-    el.sheet.hidden = true; el.settingsSheet.hidden = true; el.backdrop.hidden = true;
+    el.sheet.hidden = true; el.settingsSheet.hidden = true; el.backdrop.hidden = true; document.body.classList.remove('sheet-open');
     state.editingId = null; state.sheetImage = null;
     el.fImageFile.value = '';
   }
@@ -423,7 +426,7 @@
       price: (price == null || isNaN(price)) ? null : price,
       planned: el.fPlanned.checked, link: normalizeLink(el.fLink.value), note: el.fNote.value.trim() || null, image: image || null,
     });
-    if (!existing) state.items.push(item);
+    if (!existing) { state.items.push(item); state.newId = item.id; setTimeout(() => { state.newId = null; }, 600); }
     renderAll(); closeSheets();
     toast(existing ? 'Kaydedildi' : 'Eklendi ✨');
     await persist([item]);
@@ -457,11 +460,13 @@
       ? `Bulut bağlı · ev anahtarı: ${state.store.houseKey} · ${state.items.length} ürün`
       : `Demo mod · veri sadece bu cihazda · ${state.items.length} ürün`;
     el.sKey.hidden = state.store.mode !== 'cloud';
-    el.backdrop.hidden = false; el.settingsSheet.hidden = false;
+    el.backdrop.hidden = false; el.settingsSheet.hidden = false; document.body.classList.add('sheet-open');
+    el.sBuddies.checked = lsGet('ev.buddies.on', true);
     if (focusBudget) setTimeout(() => { el.sBudget.focus(); el.sBudget.select(); }, 50);
   }
   async function saveSettings() {
     const title = el.sTitle.value.trim() || "Cemre'nin Evi";
+    lsSet('ev.buddies.on', !!el.sBuddies.checked); try { window.EV_BUDDY_SET?.(!!el.sBuddies.checked); } catch {}
     const budget = Math.max(0, Number(el.sBudget.value) || 0);
     const changedBudget = budget !== (Number(state.settings.budget) || 0);
     state.settings = { ...state.settings, title, budget, budget_month: changedBudget || !state.settings.budget_month ? thisMonth() : state.settings.budget_month };

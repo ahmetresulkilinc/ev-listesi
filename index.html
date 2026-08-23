@@ -163,6 +163,11 @@
       <input id="sBudget" class="px-input" type="number" inputmode="numeric" min="0" step="1">
     </label>
     <p class="hint">Bütçe her ay sıfırdan girilir. "Harcanan" bu ay alındı işaretlenenlerin toplamıdır.</p>
+    <label class="field check">
+      <input id="sBuddies" type="checkbox" checked>
+      <span class="check-box"></span>
+      <span>Karakterler ekranda dolaşsın</span>
+    </label>
     <div class="settings-grid">
       <button id="sExport" class="px-btn small" type="button">⬇ Yedek indir</button>
       <label class="px-btn small">⬆ Yedek yükle<input id="sImport" type="file" accept="application/json" hidden></label>
@@ -184,5 +189,7 @@
 <script src="config.js"></script>
 <script src="seed.js"></script>
 <script src="app.js"></script>
+<script src="buddies-data.js"></script>
+<script src="buddies.js"></script>
 </body>
 </html>

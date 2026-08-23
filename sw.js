@@ -1,6 +1,6 @@
 /* Basit kabuk önbelleği: site offline da açılır, veri internetle gelir. */
-const VERSION = 'ev-v1';
-const SHELL = ['./', './index.html', './style.css', './app.js', './config.js', './seed.js', './manifest.webmanifest', './icons/icon-192.png'];
+const VERSION = 'ev-v3';
+const SHELL = ['./', './index.html', './style.css', './app.js', './config.js', './seed.js', './buddies.js', './buddies-data.js', './manifest.webmanifest', './icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

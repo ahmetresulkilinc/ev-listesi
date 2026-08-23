@@ -51,7 +51,18 @@ Tarayıcıda `http://localhost:8080`. (Telefonla denemek için aynı Wi-Fi'dan `
 | `seed.js` | başlangıç listesi (WhatsApp + Trendyol sepeti) |
 | `supabase/schema.sql` | tablolar + RLS |
 | `manifest.webmanifest`, `sw.js`, `icons/` | "Ana ekrana ekle" + offline kabuk |
+| `buddies.js`, `buddies-data.js`, `buddies/*.json` | sayfanın altında yaşayan pixel karakterler (tutup fırlat, dokun → kalp) |
 | `tools/make-icons.js` | ikonları yeniden üretir (`node tools/make-icons.js`) |
+| `tools/render-sprite.js` | bir karakter JSON'unu PNG'ye çizer (önizleme) |
+| `tools/bundle-buddies.js` | `buddies/*.json` → `buddies-data.js` |
+
+## Karakterler (buddy'ler)
+
+Altta dolaşan karakterler `buddies/<id>.json` dosyalarından gelir (`palette` + 2 `frames`; `.` şeffaf). Yeni karakter eklemek için bir JSON yaz, `node tools/render-sprite.js buddies/yeni.json onizleme.png 10` ile bak, sonra `node tools/bundle-buddies.js ayi,hayalet,flork,top,kedi,tavsan,yeni` ile paketle ve push et.
+
+- Basılı tutup sürükle → bırakınca fırlar, yere düşer, seker.
+- Dokun → zıplar, kalp saçar, bir şey söyler.
+- Bir ürün "Alındı" olunca hepsi birlikte zıplar.
 
 ## Yedek
 
